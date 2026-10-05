@@ -43,4 +43,4 @@ The nature rune price defaults to 180 gp. You can set your own or use the live G
 
 ## Author
 
-Made by iotaaa. More of my work at [iotaaa.co.uk](https://www.iotaaa.co.uk/).
+You can find my socials at [iotaaa.co.uk](https://www.iotaaa.co.uk/).

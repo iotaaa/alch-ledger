@@ -1,7 +1,6 @@
 package com.alchledger;
 
 import com.google.inject.Provides;
-import java.awt.image.BufferedImage;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
@@ -17,8 +16,6 @@ import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.StatChanged;
 import net.runelite.api.gameval.InventoryID;
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.SpriteID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatColorType;
@@ -30,7 +27,6 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -73,9 +69,6 @@ public class AlchLedgerPlugin extends Plugin
 	private ChatMessageManager chatMessageManager;
 
 	@Inject
-	private SpriteManager spriteManager;
-
-	@Inject
 	private ProfitCalculator calculator;
 
 	@Inject
@@ -105,9 +98,16 @@ public class AlchLedgerPlugin extends Plugin
 		overlayManager.add(sessionOverlay);
 
 		panel = injector.getInstance(AlchLedgerPanel.class);
-		// The spell icon is a game sprite, so the button is only made once the sprites have loaded
-		spriteManager.getSpriteAsync(SpriteID.Magicon.HIGH_LEVEL_ALCHEMY, 0, sprite ->
-			SwingUtilities.invokeLater(() -> addNavButton(sprite)));
+		navButton = NavigationButton.builder()
+			.tooltip("Alch Ledger")
+			.icon(ImageUtil.loadImageResource(AlchLedgerPlugin.class, "nav_icon.png"))
+			.priority(7)
+			.panel(panel)
+			.build();
+		if (config.showSidePanel())
+		{
+			clientToolbar.addNavigation(navButton);
+		}
 
 		tracker.loadAllTime();
 		clientThread.invokeLater(() ->
@@ -127,10 +127,7 @@ public class AlchLedgerPlugin extends Plugin
 	{
 		overlayManager.remove(itemOverlay);
 		overlayManager.remove(sessionOverlay);
-		if (navButton != null)
-		{
-			clientToolbar.removeNavigation(navButton);
-		}
+		clientToolbar.removeNavigation(navButton);
 		panel = null;
 		navButton = null;
 
@@ -199,10 +196,6 @@ public class AlchLedgerPlugin extends Plugin
 
 		if ("showSidePanel".equals(event.getKey()))
 		{
-			if (navButton == null)
-			{
-				return;
-			}
 			if (config.showSidePanel())
 			{
 				clientToolbar.addNavigation(navButton);
@@ -379,29 +372,6 @@ public class AlchLedgerPlugin extends Plugin
 				panel.refreshView(false);
 			}
 		});
-	}
-
-	private void addNavButton(BufferedImage sprite)
-	{
-		// Skip if the plugin was stopped, or the button already exists, before the sprite loaded
-		if (panel == null || navButton != null)
-		{
-			return;
-		}
-
-		BufferedImage icon = sprite != null
-			? ImageUtil.resizeImage(sprite, 16, 16, true)
-			: itemManager.getImage(ItemID.NATURERUNE);
-		navButton = NavigationButton.builder()
-			.tooltip("Alch Ledger")
-			.icon(icon)
-			.priority(7)
-			.panel(panel)
-			.build();
-		if (config.showSidePanel())
-		{
-			clientToolbar.addNavigation(navButton);
-		}
 	}
 
 	@Provides
