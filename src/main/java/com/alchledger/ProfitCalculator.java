@@ -112,10 +112,6 @@ public class ProfitCalculator
 
 	public ProfitTier getTier(int profit)
 	{
-		if (profit < 0)
-		{
-			return ProfitTier.LOSS;
-		}
 		if (profit >= config.highThreshold())
 		{
 			return ProfitTier.HIGH;
@@ -128,7 +124,7 @@ public class ProfitCalculator
 		{
 			return ProfitTier.LOW;
 		}
-		return null;
+		return ProfitTier.BELOW_LOW;
 	}
 
 	public Color getColor(ProfitTier tier)
@@ -139,7 +135,7 @@ public class ProfitCalculator
 		}
 		switch (tier)
 		{
-			case LOSS:
+			case BELOW_LOW:
 				return config.lossColor();
 			case LOW:
 				return config.lowColor();

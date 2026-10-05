@@ -107,8 +107,8 @@ public interface AlchLedgerConfig extends Config
 
 	@ConfigItem(
 		keyName = "outlineLoss",
-		name = "Outline losing items",
-		description = "Outline items that lose money when alched",
+		name = "Outline below low tier",
+		description = "Outline items making less than the low tier, including items that lose money",
 		position = 2,
 		section = outlineSection
 	)
@@ -120,8 +120,8 @@ public interface AlchLedgerConfig extends Config
 	@Alpha
 	@ConfigItem(
 		keyName = "lossColor",
-		name = "Loss colour",
-		description = "Outline colour for items that lose money",
+		name = "Below low colour",
+		description = "Outline colour for items making less than the low tier",
 		position = 3,
 		section = outlineSection
 	)

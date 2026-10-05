@@ -49,7 +49,7 @@ class AlchLedgerItemOverlay extends WidgetItemOverlay
 		}
 
 		ProfitTier tier = calculator.getTier(profit);
-		if (tier == null || (tier == ProfitTier.LOSS && !config.outlineLoss()))
+		if (tier == null || (tier == ProfitTier.BELOW_LOW && !config.outlineLoss()))
 		{
 			return;
 		}
