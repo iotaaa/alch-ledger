@@ -2,14 +2,16 @@
 
 Shows which items make a profit when high alched, outlines them by profit tier, and keeps a ledger of how much you've made from alching. Works for standard accounts and ironmen.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/iotaaa/alch-ledger/main/images/sidebar.png" alt="Best GE alchs">
-  <img src="https://raw.githubusercontent.com/iotaaa/alch-ledger/main/images/inventory.png" alt="My inventory">
-</p>
-<p align="center">
-  <img src="https://raw.githubusercontent.com/iotaaa/alch-ledger/main/images/alchlog.png" alt="Alch log">
-  <img src="https://raw.githubusercontent.com/iotaaa/alch-ledger/main/images/alltime.png" alt="All-time by item">
-</p>
+<table align="center">
+  <tr>
+    <td align="center" width="50%"><b>Best GE alchs</b><br><img src="https://raw.githubusercontent.com/iotaaa/alch-ledger/main/images/sidebar.png" alt="Best GE alchs"></td>
+    <td align="center" width="50%"><b>My inventory</b><br><img src="https://raw.githubusercontent.com/iotaaa/alch-ledger/main/images/inventory.png" alt="My inventory"></td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><b>Alch log</b><br><img src="https://raw.githubusercontent.com/iotaaa/alch-ledger/main/images/alchlog.png" alt="Alch log"></td>
+    <td align="center" width="50%"><b>All-time by item</b><br><img src="https://raw.githubusercontent.com/iotaaa/alch-ledger/main/images/alltime.png" alt="All-time by item"></td>
+  </tr>
+</table>
 
 ## Side panel
 
@@ -40,6 +42,7 @@ Every High Level Alchemy cast is logged at the prices when you cast it. Session 
 An overlay shows this session's casts, profit and profit per hour. You can also turn on a chat message for each cast, Magic xp and xp/hr, and gp/xp for each item.
 
 <p align="center">
+  <b>Session overlay</b><br>
   <img src="https://raw.githubusercontent.com/iotaaa/alch-ledger/main/images/screencard.png" alt="Session overlay">
 </p>
 
