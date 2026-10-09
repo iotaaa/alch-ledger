@@ -6,5 +6,6 @@ public enum ProfitTier
 	BELOW_LOW,
 	LOW,
 	MEDIUM,
-	HIGH
+	HIGH,
+	SUPER
 }

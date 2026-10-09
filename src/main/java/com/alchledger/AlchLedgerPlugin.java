@@ -231,9 +231,14 @@ public class AlchLedgerPlugin extends Plugin
 		tracker.loadAllTime();
 		SwingUtilities.invokeLater(() ->
 		{
-			if (panel != null)
+			if (panel == null)
 			{
-				panel.updateStats();
+				return;
+			}
+			panel.updateStats();
+			if (panel.isShowing() && panel.getView() == AlchLedgerPanel.View.ITEM_TOTALS)
+			{
+				panel.refreshView(false);
 			}
 		});
 	}
@@ -367,7 +372,8 @@ public class AlchLedgerPlugin extends Plugin
 				return;
 			}
 			panel.updateStats();
-			if (panel.isShowing() && panel.getView() == AlchLedgerPanel.View.LOG)
+			if (panel.isShowing()
+				&& (panel.getView() == AlchLedgerPanel.View.LOG || panel.getView() == AlchLedgerPanel.View.ITEM_TOTALS))
 			{
 				panel.refreshView(false);
 			}

@@ -5,19 +5,25 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 
 /**
  * Session and all-time alching profit. The all-time totals are saved per account.
  */
+@Slf4j
 @Singleton
 public class ProfitTracker
 {
 	private static final String ALL_TIME_PROFIT_KEY = "allTimeProfit";
 	private static final String ALL_TIME_CASTS_KEY = "allTimeCasts";
+	// Saved as "itemId:casts:profit" entries separated by commas
+	private static final String ITEM_TOTALS_KEY = "itemTotals";
 	private static final int MAX_RECENT = 200;
 	private static final Duration MIN_RATE_DURATION = Duration.ofMinutes(1);
 	private static final Duration RATE_UPDATE_INTERVAL = Duration.ofSeconds(10);
@@ -30,6 +36,7 @@ public class ProfitTracker
 	private Instant sessionStart;
 	private long allTimeProfit;
 	private long allTimeCasts;
+	private final Map<Integer, ItemTotal> itemTotals = new HashMap<>();
 	private long sessionXp;
 	// Hourly rates are only recalculated every few seconds so they don't flicker
 	private Long profitPerHour;
@@ -46,6 +53,30 @@ public class ProfitTracker
 	{
 		allTimeProfit = parseLong(configManager.getRSProfileConfiguration(AlchLedgerConfig.GROUP, ALL_TIME_PROFIT_KEY));
 		allTimeCasts = parseLong(configManager.getRSProfileConfiguration(AlchLedgerConfig.GROUP, ALL_TIME_CASTS_KEY));
+
+		itemTotals.clear();
+		String saved = configManager.getRSProfileConfiguration(AlchLedgerConfig.GROUP, ITEM_TOTALS_KEY);
+		if (saved == null || saved.isEmpty())
+		{
+			return;
+		}
+		for (String entry : saved.split(","))
+		{
+			String[] parts = entry.split(":");
+			if (parts.length != 3)
+			{
+				continue;
+			}
+			try
+			{
+				int itemId = Integer.parseInt(parts[0]);
+				itemTotals.put(itemId, new ItemTotal(itemId, Long.parseLong(parts[1]), Long.parseLong(parts[2])));
+			}
+			catch (NumberFormatException e)
+			{
+				log.debug("Skipping bad item total {}", entry);
+			}
+		}
 	}
 
 	public synchronized void record(AlchRecord record)
@@ -59,6 +90,8 @@ public class ProfitTracker
 		sessionCasts++;
 		allTimeProfit += record.getProfit();
 		allTimeCasts++;
+		itemTotals.merge(record.getItemId(), new ItemTotal(record.getItemId(), 1, record.getProfit()),
+			(total, cast) -> total.add(cast.getProfit()));
 
 		recent.addFirst(record);
 		while (recent.size() > MAX_RECENT)
@@ -85,6 +118,7 @@ public class ProfitTracker
 	{
 		allTimeProfit = 0;
 		allTimeCasts = 0;
+		itemTotals.clear();
 		saveAllTime();
 	}
 
@@ -163,10 +197,29 @@ public class ProfitTracker
 		return new ArrayList<>(recent);
 	}
 
+	/**
+	 * @return the all-time totals for each item alched on this account
+	 */
+	public synchronized List<ItemTotal> getItemTotals()
+	{
+		return new ArrayList<>(itemTotals.values());
+	}
+
 	private void saveAllTime()
 	{
 		configManager.setRSProfileConfiguration(AlchLedgerConfig.GROUP, ALL_TIME_PROFIT_KEY, allTimeProfit);
 		configManager.setRSProfileConfiguration(AlchLedgerConfig.GROUP, ALL_TIME_CASTS_KEY, allTimeCasts);
+
+		StringBuilder saved = new StringBuilder();
+		for (ItemTotal total : itemTotals.values())
+		{
+			if (saved.length() > 0)
+			{
+				saved.append(',');
+			}
+			saved.append(total.getItemId()).append(':').append(total.getCasts()).append(':').append(total.getProfit());
+		}
+		configManager.setRSProfileConfiguration(AlchLedgerConfig.GROUP, ITEM_TOTALS_KEY, saved.toString());
 	}
 
 	private static long parseLong(String value)

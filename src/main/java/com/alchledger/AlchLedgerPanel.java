@@ -10,8 +10,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -32,6 +34,7 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.QuantityFormatter;
+import net.runelite.http.api.item.ItemPrice;
 
 class AlchLedgerPanel extends PluginPanel
 {
@@ -43,7 +46,8 @@ class AlchLedgerPanel extends PluginPanel
 		BEST_GE("Best GE alchs"),
 		INVENTORY("My inventory"),
 		BANK("My bank"),
-		LOG("Alch log");
+		LOG("Alch log"),
+		ITEM_TOTALS("All-time by item");
 
 		private final String name;
 
@@ -109,10 +113,12 @@ class AlchLedgerPanel extends PluginPanel
 		JLabel title = new JLabel("Alch Ledger");
 		title.setFont(FontManager.getRunescapeBoldFont());
 		title.setForeground(Color.WHITE);
+		centre(title, 0);
 		top.add(title);
 
 		modeLabel.setFont(FontManager.getRunescapeSmallFont());
 		modeLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		centre(modeLabel, 2);
 		top.add(modeLabel);
 
 		JPanel stats = new JPanel();
@@ -122,6 +128,7 @@ class AlchLedgerPanel extends PluginPanel
 		for (JLabel label : new JLabel[]{sessionLabel, rateLabel, xpLabel, allTimeLabel})
 		{
 			label.setFont(FontManager.getRunescapeSmallFont());
+			centre(label, 3);
 			stats.add(label);
 		}
 		stats.setAlignmentX(LEFT_ALIGNMENT);
@@ -148,12 +155,16 @@ class AlchLedgerPanel extends PluginPanel
 		resetAll.addActionListener(e ->
 		{
 			int result = JOptionPane.showConfirmDialog(this,
-				"Reset the all-time alch profit for this account?",
+				"Reset the all-time alch profit and item totals for this account?",
 				"Reset all", JOptionPane.YES_NO_OPTION);
 			if (result == JOptionPane.YES_OPTION)
 			{
 				tracker.resetAllTime();
 				updateStats();
+				if (getView() == View.ITEM_TOTALS)
+				{
+					refreshView(false);
+				}
 			}
 		});
 		JPanel resetButtons = new JPanel(new GridLayout(1, 2, 4, 0));
@@ -288,6 +299,9 @@ class AlchLedgerPanel extends PluginPanel
 			case LOG:
 				showLog();
 				break;
+			case ITEM_TOTALS:
+				clientThread.invokeLater(() -> buildItemTotalsList(gen));
+				break;
 		}
 	}
 
@@ -302,6 +316,16 @@ class AlchLedgerPanel extends PluginPanel
 		int minProfit = config.minProfitToList();
 		boolean includeMembers = config.includeMembers();
 
+		// Items with real trades on the GE. The rest only have an old guide price, such as Deadman-only items.
+		Set<Integer> traded = new HashSet<>();
+		for (ItemPrice price : itemManager.search(""))
+		{
+			if (price.getWikiPrice() > 0)
+			{
+				traded.add(price.getId());
+			}
+		}
+
 		List<Row> rows = new ArrayList<>();
 		int count = client.getItemCount();
 		for (int id = 0; id < count; id++)
@@ -310,15 +334,16 @@ class AlchLedgerPanel extends PluginPanel
 			if (item.getNote() != -1
 				|| item.getPlaceholderTemplateId() != -1
 				|| !item.isTradeable()
-				|| item.getHaPrice() <= 0
+				|| !ProfitCalculator.isAlchable(item)
 				|| "null".equals(item.getName())
 				|| (!includeMembers && item.isMembers())
-				|| ProfitCalculator.isCurrency(id))
+				|| ProfitCalculator.isCurrency(id)
+				|| !traded.contains(id))
 			{
 				continue;
 			}
 
-			int gePrice = (int) itemManager.getItemPrice(id);
+			int gePrice = calculator.getBuyPrice(id);
 			if (gePrice <= 0)
 			{
 				continue;
@@ -379,7 +404,7 @@ class AlchLedgerPanel extends PluginPanel
 			String prices = "HA " + QuantityFormatter.formatNumber(item.getHaPrice());
 			if (!ironman)
 			{
-				prices += " / GE " + QuantityFormatter.formatNumber(itemManager.getItemPrice(id));
+				prices += " / GE " + QuantityFormatter.formatNumber(calculator.getBuyPrice(id));
 			}
 			String detail = "x" + QuantityFormatter.quantityToStackSize(quantity)
 				+ " · " + Format.gp(profit) + " ea · " + prices + gpPerXpSuffix(profit);
@@ -409,6 +434,34 @@ class AlchLedgerPanel extends PluginPanel
 				calculator.getTier(record.getProfit())));
 		}
 		showRows(rows, "No casts yet this session.");
+	}
+
+	private boolean buildItemTotalsList(int gen)
+	{
+		if (client.getGameState().getState() < GameState.LOGIN_SCREEN.getState())
+		{
+			return false;
+		}
+
+		List<Row> rows = new ArrayList<>();
+		for (ItemTotal total : tracker.getItemTotals())
+		{
+			long average = total.getProfit() / total.getCasts();
+			String detail = plural(total.getCasts()) + " · " + Format.gp(average) + " ea";
+			rows.add(new Row(total.getItemId(), itemManager.getItemComposition(total.getItemId()).getName(), detail,
+				total.getProfit(), calculator.getTier((int) average)));
+		}
+
+		rows.sort(Comparator.comparingLong(Row::getProfit).reversed());
+
+		SwingUtilities.invokeLater(() ->
+		{
+			if (gen == generation)
+			{
+				showRows(rows, "No casts recorded on this account yet.");
+			}
+		});
+		return true;
 	}
 
 	private void showMessage(String message)
@@ -490,6 +543,20 @@ class AlchLedgerPanel extends PluginPanel
 	private String gpPerXpSuffix(int profit)
 	{
 		return config.showGpPerXp() ? " · " + Format.gpPerXp(profit) : "";
+	}
+
+	/**
+	 * Stretches a label across the panel with its text centred, and pads it vertically.
+	 * Call after setting the font, since the height comes from it.
+	 */
+	private static void centre(JLabel label, int padding)
+	{
+		label.setHorizontalAlignment(JLabel.CENTER);
+		label.setAlignmentX(LEFT_ALIGNMENT);
+		label.setBorder(BorderFactory.createEmptyBorder(padding, 0, padding, 0));
+		int height = label.getFontMetrics(label.getFont()).getHeight() + padding * 2;
+		label.setPreferredSize(new Dimension(0, height));
+		label.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
 	}
 
 	private static JPanel spacer()

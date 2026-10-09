@@ -205,6 +205,43 @@ public interface AlchLedgerConfig extends Config
 		return new Color(102, 204, 255);
 	}
 
+	@ConfigItem(
+		keyName = "superThreshold",
+		name = "Super tier from (gp)",
+		description = "Minimum profit per cast for the super tier",
+		position = 10,
+		section = outlineSection
+	)
+	default int superThreshold()
+	{
+		return 5000;
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "superColor",
+		name = "Super colour",
+		description = "Outline colour for the super tier",
+		position = 11,
+		section = outlineSection
+	)
+	default Color superColor()
+	{
+		return new Color(200, 80, 255);
+	}
+
+	@ConfigItem(
+		keyName = "showAlchValueTooltip",
+		name = "Show alch value on hover",
+		description = "Show an item's alch value and profit per cast when you hover over it in your inventory or bank",
+		position = 12,
+		section = outlineSection
+	)
+	default boolean showAlchValueTooltip()
+	{
+		return false;
+	}
+
 	// Side panel
 
 	@ConfigItem(

@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import net.runelite.api.ItemComposition;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.client.game.ItemManager;
 
@@ -17,6 +18,9 @@ public class ProfitCalculator
 	public static final int HIGH_ALCH_XP = 65;
 
 	private static final int UNKNOWN = Integer.MIN_VALUE;
+
+	// Item param set to 1 on items that can't be alched, such as Leagues rewards, even though they have an alch value
+	private static final int NOT_ALCHABLE_PARAM = 295;
 
 	private final ItemManager itemManager;
 	private final AlchLedgerConfig config;
@@ -86,23 +90,38 @@ public class ProfitCalculator
 			return UNKNOWN;
 		}
 
-		int alchValue = itemManager.getItemComposition(id).getHaPrice();
-		if (alchValue <= 0)
+		ItemComposition item = itemManager.getItemComposition(id);
+		if (!isAlchable(item))
 		{
 			return UNKNOWN;
 		}
+		int alchValue = item.getHaPrice();
 
 		if (isIronman())
 		{
 			return alchValue - getNatureRunePrice();
 		}
 
-		int gePrice = (int) itemManager.getItemPrice(id);
+		int gePrice = getBuyPrice(id);
 		if (gePrice <= 0)
 		{
 			return UNKNOWN;
 		}
 		return alchValue - gePrice - getNatureRunePrice();
+	}
+
+	/**
+	 * @return the higher of the GE guide price and the wiki price. Rarely traded items often have one
+	 * out-of-date price, which would make them look like a profitable alch when they aren't.
+	 */
+	public int getBuyPrice(int itemId)
+	{
+		return (int) Math.max(itemManager.getItemPriceWithSource(itemId, false), itemManager.getItemPriceWithSource(itemId, true));
+	}
+
+	public static boolean isAlchable(ItemComposition item)
+	{
+		return item.getHaPrice() > 0 && item.getIntValue(NOT_ALCHABLE_PARAM) != 1;
 	}
 
 	public static boolean isCurrency(int canonicalId)
@@ -112,6 +131,10 @@ public class ProfitCalculator
 
 	public ProfitTier getTier(int profit)
 	{
+		if (profit >= config.superThreshold())
+		{
+			return ProfitTier.SUPER;
+		}
 		if (profit >= config.highThreshold())
 		{
 			return ProfitTier.HIGH;
@@ -143,6 +166,8 @@ public class ProfitCalculator
 				return config.mediumColor();
 			case HIGH:
 				return config.highColor();
+			case SUPER:
+				return config.superColor();
 			default:
 				return null;
 		}
