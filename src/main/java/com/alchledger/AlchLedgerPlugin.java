@@ -2,6 +2,8 @@ package com.alchledger;
 
 import com.google.inject.Provides;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +25,10 @@ import net.runelite.client.chat.ChatMessageBuilder;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.PluginMessage;
 import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
@@ -83,6 +87,12 @@ public class AlchLedgerPlugin extends Plugin
 	@Inject
 	private AlchLedgerSessionOverlay sessionOverlay;
 
+	@Inject
+	private EventBus eventBus;
+
+	@Inject
+	private BankStewardLink bankSteward;
+
 	private AlchLedgerPanel panel;
 	private NavigationButton navButton;
 
@@ -112,6 +122,10 @@ public class AlchLedgerPlugin extends Plugin
 		tracker.loadAllTime();
 		clientThread.invokeLater(() ->
 		{
+			// Ask Bank Steward (if it's running) whether its guide is on. Sent from here, once this plugin
+			// is subscribed to events, so the reply isn't missed.
+			eventBus.post(new PluginMessage(BankStewardLink.NAMESPACE, "hello"));
+
 			if (client.getGameState() == GameState.LOGGED_IN)
 			{
 				// Started mid-session: pick up the current xp and containers
@@ -133,11 +147,50 @@ public class AlchLedgerPlugin extends Plugin
 
 		calculator.clearCache();
 		calculator.setIronmanDetected(false);
+		bankSteward.setGuideActive(false);
 		tracker.resetSession();
 		ownedItems.clear();
 		pendingItemId = -1;
 		lastMagicXp = -1;
 		lastIronman = null;
+	}
+
+	@Subscribe
+	public void onPluginMessage(PluginMessage message)
+	{
+		if (!BankStewardLink.STEWARD_NAMESPACE.equals(message.getNamespace()))
+		{
+			return;
+		}
+		if ("guide".equals(message.getName()))
+		{
+			bankSteward.setGuideActive(Boolean.TRUE.equals(message.getData().get("active")));
+		}
+		else if ("profitRequest".equals(message.getName()) && client.isClientThread())
+		{
+			// Bank Steward wants to know which of its items are worth alching (at or above the Low tier).
+			// It asks on the client thread and reads the answer straight after, so reply right away.
+			Object items = message.getData().get("items");
+			Map<Integer, Integer> profits = new HashMap<>();
+			if (items instanceof Iterable)
+			{
+				for (Object o : (Iterable<?>) items)
+				{
+					if (!(o instanceof Integer))
+					{
+						continue;
+					}
+					Integer profit = calculator.getProfit((Integer) o);
+					if (profit != null && profit >= config.lowThreshold())
+					{
+						profits.put((Integer) o, profit);
+					}
+				}
+			}
+			Map<String, Object> data = new HashMap<>();
+			data.put("profits", profits);
+			eventBus.post(new PluginMessage(BankStewardLink.NAMESPACE, "profits", data));
+		}
 	}
 
 	@Subscribe

@@ -25,11 +25,13 @@ class AlchLedgerItemOverlay extends WidgetItemOverlay
 	private final ItemManager itemManager;
 	private final ProfitCalculator calculator;
 	private final AlchLedgerConfig config;
+	private final BankStewardLink bankSteward;
 
 	@Inject
 	AlchLedgerItemOverlay(Client client, TooltipManager tooltipManager, ItemManager itemManager,
-		ProfitCalculator calculator, AlchLedgerConfig config)
+		ProfitCalculator calculator, AlchLedgerConfig config, BankStewardLink bankSteward)
 	{
+		this.bankSteward = bankSteward;
 		this.client = client;
 		this.tooltipManager = tooltipManager;
 		this.itemManager = itemManager;
@@ -58,6 +60,12 @@ class AlchLedgerItemOverlay extends WidgetItemOverlay
 
 		boolean inBank = WidgetUtil.componentToInterface(widgetItem.getWidget().getId()) == InterfaceID.BANKMAIN;
 		if (inBank ? !config.outlineBank() : !config.outlineInventory())
+		{
+			return;
+		}
+
+		// Bank Steward's guide is showing which items to move: keep the bank clear for it
+		if (inBank && bankSteward.isGuideActive())
 		{
 			return;
 		}

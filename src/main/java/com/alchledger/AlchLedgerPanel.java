@@ -19,6 +19,7 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -32,6 +33,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.util.ImageUtil;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.QuantityFormatter;
 import net.runelite.http.api.item.ItemPrice;
@@ -110,8 +112,10 @@ class AlchLedgerPanel extends PluginPanel
 		JPanel top = new JPanel();
 		top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
 
-		JLabel title = new JLabel("Alch Ledger");
-		title.setFont(FontManager.getRunescapeBoldFont());
+		// icon beside the title, like Bank Steward's panel
+		JLabel title = new JLabel("Alch Ledger", new ImageIcon(ImageUtil.loadImageResource(AlchLedgerPanel.class, "nav_icon.png")), JLabel.CENTER);
+		title.setIconTextGap(6);
+		title.setFont(FontManager.getRunescapeBoldFont().deriveFont(18f));
 		title.setForeground(Color.WHITE);
 		centre(title, 0);
 		top.add(title);
