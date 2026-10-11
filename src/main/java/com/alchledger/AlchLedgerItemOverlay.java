@@ -1,6 +1,8 @@
 package com.alchledger;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
+import java.awt.Composite;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -83,7 +85,10 @@ class AlchLedgerItemOverlay extends WidgetItemOverlay
 
 		Color color = calculator.getColor(tier);
 		BufferedImage outline = itemManager.getItemOutline(itemId, widgetItem.getQuantity(), color);
+		Composite old = graphics.getComposite();
+		graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, config.outlineOpacity() / 100f));
 		graphics.drawImage(outline, (int) bounds.getX(), (int) bounds.getY(), null);
+		graphics.setComposite(old);
 	}
 
 	private boolean isHovered(Rectangle bounds)

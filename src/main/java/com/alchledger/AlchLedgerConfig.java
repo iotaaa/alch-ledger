@@ -7,6 +7,7 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
+import net.runelite.client.config.Units;
 
 @ConfigGroup(AlchLedgerConfig.GROUP)
 public interface AlchLedgerConfig extends Config
@@ -105,11 +106,25 @@ public interface AlchLedgerConfig extends Config
 		return true;
 	}
 
+	@Range(min = 10, max = 100)
+	@Units(Units.PERCENT)
+	@ConfigItem(
+		keyName = "outlineOpacity",
+		name = "Outline opacity",
+		description = "How strong the profit outlines are, in the inventory and bank",
+		position = 2,
+		section = outlineSection
+	)
+	default int outlineOpacity()
+	{
+		return 100;
+	}
+
 	@ConfigItem(
 		keyName = "outlineLoss",
 		name = "Outline below low tier",
 		description = "Outline items making less than the low tier, including items that lose money",
-		position = 2,
+		position = 3,
 		section = outlineSection
 	)
 	default boolean outlineLoss()
@@ -122,7 +137,7 @@ public interface AlchLedgerConfig extends Config
 		keyName = "lossColor",
 		name = "Below low colour",
 		description = "Outline colour for items making less than the low tier",
-		position = 3,
+		position = 4,
 		section = outlineSection
 	)
 	default Color lossColor()
@@ -134,7 +149,7 @@ public interface AlchLedgerConfig extends Config
 		keyName = "lowThreshold",
 		name = "Low tier from (gp)",
 		description = "Minimum profit per cast for the low tier",
-		position = 4,
+		position = 5,
 		section = outlineSection
 	)
 	default int lowThreshold()
@@ -147,7 +162,7 @@ public interface AlchLedgerConfig extends Config
 		keyName = "lowColor",
 		name = "Low colour",
 		description = "Outline colour for the low tier",
-		position = 5,
+		position = 6,
 		section = outlineSection
 	)
 	default Color lowColor()
@@ -159,7 +174,7 @@ public interface AlchLedgerConfig extends Config
 		keyName = "mediumThreshold",
 		name = "Medium tier from (gp)",
 		description = "Minimum profit per cast for the medium tier",
-		position = 6,
+		position = 7,
 		section = outlineSection
 	)
 	default int mediumThreshold()
@@ -172,7 +187,7 @@ public interface AlchLedgerConfig extends Config
 		keyName = "mediumColor",
 		name = "Medium colour",
 		description = "Outline colour for the medium tier",
-		position = 7,
+		position = 8,
 		section = outlineSection
 	)
 	default Color mediumColor()
@@ -184,7 +199,7 @@ public interface AlchLedgerConfig extends Config
 		keyName = "highThreshold",
 		name = "High tier from (gp)",
 		description = "Minimum profit per cast for the high tier",
-		position = 8,
+		position = 9,
 		section = outlineSection
 	)
 	default int highThreshold()
@@ -197,7 +212,7 @@ public interface AlchLedgerConfig extends Config
 		keyName = "highColor",
 		name = "High colour",
 		description = "Outline colour for the high tier",
-		position = 9,
+		position = 10,
 		section = outlineSection
 	)
 	default Color highColor()
@@ -209,7 +224,7 @@ public interface AlchLedgerConfig extends Config
 		keyName = "superThreshold",
 		name = "Super tier from (gp)",
 		description = "Minimum profit per cast for the super tier",
-		position = 10,
+		position = 11,
 		section = outlineSection
 	)
 	default int superThreshold()
@@ -222,7 +237,7 @@ public interface AlchLedgerConfig extends Config
 		keyName = "superColor",
 		name = "Super colour",
 		description = "Outline colour for the super tier",
-		position = 11,
+		position = 12,
 		section = outlineSection
 	)
 	default Color superColor()
@@ -234,7 +249,7 @@ public interface AlchLedgerConfig extends Config
 		keyName = "showAlchValueTooltip",
 		name = "Show alch value on hover",
 		description = "Show an item's alch value and profit per cast when you hover over it in your inventory or bank",
-		position = 12,
+		position = 13,
 		section = outlineSection
 	)
 	default boolean showAlchValueTooltip()
